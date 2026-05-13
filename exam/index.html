@@ -3,373 +3,470 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Exam Portal</title>
+    <title>QUANTUMANIA | Exam Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600;800&display=swap');
 
         :root {
-            --neon-cyan: #00f3ff;
-            --neon-purple: #bc13fe;
-            --bg-dark: #0a0a0c;
+            --accent-primary: #00ff88;
+            --accent-secondary: #7000ff;
+            --bg-dark: #050505;
+            --bg-light: #f8fafc;
         }
 
         body {
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        body.dark {
             background-color: var(--bg-dark);
-            color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-            user-select: none;
+            color: #f8fafc;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(112, 0, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 255, 136, 0.1) 0%, transparent 40%);
         }
 
-        .font-orbitron { font-family: 'Orbitron', sans-serif; }
-
-        .neon-border {
-            border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        body:not(.dark) {
+            background-color: var(--bg-light);
+            color: #0f172a;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(112, 0, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 255, 136, 0.05) 0%, transparent 40%);
         }
 
-        .neon-text {
-            color: var(--neon-cyan);
-            text-shadow: 0 0 8px rgba(0, 243, 255, 0.6);
-        }
+        .font-brand { font-family: 'Space Grotesk', sans-serif; }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
+        .quantum-border {
             border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        body:not(.dark) .quantum-border {
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .timer-glow {
-            text-shadow: 0 0 15px var(--neon-cyan);
+        .quantum-border::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
         }
 
-        #pdf-frame {
+        .neon-glow {
+            text-shadow: 0 0 15px var(--accent-primary);
+        }
+
+        .glass-morphism {
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        body.dark .glass-morphism {
+            background: rgba(15, 15, 20, 0.7);
+        }
+        body:not(.dark) .glass-morphism {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        #pdf-viewer {
             width: 100%;
             height: calc(100vh - 180px);
-            border: none;
+            border-radius: 12px;
+            background: #111;
         }
 
-        .code-box {
-            background: linear-gradient(135deg, rgba(188, 19, 254, 0.1), rgba(0, 243, 255, 0.1));
-            border: 2px dashed var(--neon-cyan);
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-secondary), #4f00b8);
+            box-shadow: 0 4px 15px rgba(112, 0, 255, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Loading Spinner */
-        .loader {
-            border: 4px solid #1a1a1a;
-            border-top: 4px solid var(--neon-cyan);
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(112, 0, 255, 0.5);
+        }
+
+        .code-display {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--accent-primary);
+            font-family: monospace;
+        }
+        body:not(.dark) .code-display {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .loader-ring {
+            width: 50px;
+            height: 50px;
+            border: 3px solid transparent;
+            border-top-color: var(--accent-primary);
+            border-right-color: var(--accent-secondary);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
         }
 
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Custom toggle switch styling */
+        .theme-toggle-btn {
+            width: 44px;
+            height: 24px;
+            background: rgba(128, 128, 128, 0.2);
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .theme-toggle-btn .circle {
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #333;
+        }
+        body.dark .theme-toggle-btn { background: var(--accent-secondary); }
+        body.dark .theme-toggle-btn .circle { transform: translateX(20px); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
-
-    <!-- Security Overlay for Right Click -->
-    <div id="security-msg" class="fixed inset-0 bg-black/90 z-[100] hidden items-center justify-center text-center p-6">
-        <div>
-            <i class="fas fa-shield-alt text-6xl text-red-500 mb-4"></i>
-            <h2 class="text-2xl font-bold text-white mb-2">Security Violation</h2>
-            <p class="text-gray-400">Right-click and shortcuts are disabled to protect exam integrity.</p>
-            <button onclick="document.getElementById('security-msg').style.display='none'" class="mt-6 px-6 py-2 bg-cyan-600 text-white rounded">Resume Exam</button>
-        </div>
-    </div>
+<body class="min-h-screen flex flex-col dark">
 
     <!-- Header -->
-    <header class="p-4 glass-panel flex flex-wrap justify-between items-center gap-4 z-10 sticky top-0">
+    <header class="px-6 py-4 glass-morphism flex justify-between items-center z-10 sticky top-0 border-b border-white/5">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
-                <i class="fas fa-atom text-white text-xl"></i>
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-emerald-400 flex items-center justify-center rotate-3 shadow-lg">
+                <span class="text-white font-black text-xl font-brand">Q</span>
             </div>
-            <h1 class="font-orbitron font-bold text-xl tracking-wider neon-text uppercase">Nexus Exam Portal</h1>
+            <div>
+                <h1 class="font-brand font-black text-2xl tracking-tighter text-slate-900 dark:text-white">QUANTUMANIA</h1>
+                <p class="text-[9px] font-bold text-emerald-500 dark:text-emerald-400 tracking-[0.2em] uppercase -mt-1">Secure Portal</p>
+            </div>
         </div>
 
-        <div id="timer-container" class="flex items-center gap-4 hidden">
-            <div class="text-right">
-                <p class="text-[10px] uppercase tracking-widest text-gray-400">Time Remaining</p>
-                <p id="timer-display" class="font-orbitron text-3xl neon-text timer-glow">00:00:00</p>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 mr-2">
+                <i class="fas fa-sun text-orange-400 text-xs"></i>
+                <div class="theme-toggle-btn" onclick="toggleTheme()">
+                    <div class="circle"></div>
+                </div>
+                <i class="fas fa-moon text-indigo-400 text-xs"></i>
             </div>
-            <button id="finish-btn" class="px-6 py-2 bg-red-500/20 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all rounded font-bold uppercase text-sm">
-                End Exam
-            </button>
+
+            <div id="timer-container" class="hidden flex items-center gap-6 border-l border-black/10 dark:border-white/10 pl-6">
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Time Remaining</span>
+                    <span id="timer-display" class="font-brand text-3xl font-bold tracking-tighter text-slate-900 dark:text-white dark:neon-glow">00:00:00</span>
+                </div>
+                <button id="finish-btn" class="h-10 px-5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-red-500/20 hover:border-red-500/50 text-slate-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-all rounded-full font-bold uppercase text-[10px] tracking-widest">
+                    End Paper
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="flex-grow relative flex flex-col items-center justify-center p-4">
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4">
         
-        <!-- Loading State -->
+        <!-- Loading -->
         <div id="loading-screen" class="flex flex-col items-center">
-            <div class="loader mb-4"></div>
-            <p class="font-orbitron text-cyan-400 tracking-widest animate-pulse">SYNCING DATA...</p>
+            <div class="loader-ring mb-6"></div>
+            <p class="font-brand text-sm font-bold text-gray-400 tracking-[0.3em] uppercase animate-pulse">Syncing Matrix...</p>
         </div>
 
         <!-- Start Screen -->
-        <div id="start-screen" class="hidden max-w-md w-full glass-panel p-8 rounded-2xl text-center neon-border">
-            <i class="fas fa-file-invoice text-5xl mb-6 text-purple-500"></i>
-            <h2 class="text-2xl font-bold mb-4 font-orbitron">EXAM READY</h2>
-            <div id="exam-details" class="text-gray-400 mb-8 space-y-2">
-                <!-- Injected via JS -->
+        <div id="start-screen" class="hidden max-w-sm w-full glass-morphism p-10 rounded-[2.5rem] text-center quantum-border">
+            <div class="w-16 h-16 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-bolt text-2xl text-emerald-500 dark:text-emerald-400"></i>
             </div>
-            <button id="start-btn" class="w-full py-4 bg-cyan-500 text-black font-bold font-orbitron rounded-xl hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20">
-                INITIATE SESSION
+            <h2 class="text-3xl font-brand font-black mb-2 tracking-tighter uppercase text-slate-900 dark:text-white">Initiate Session</h2>
+            <p class="text-slate-500 dark:text-gray-500 text-sm mb-8 leading-relaxed">Matrix stable. Connection encrypted.</p>
+            
+            <div id="exam-details" class="bg-black/5 dark:bg-black/20 rounded-2xl p-4 mb-8 text-sm space-y-2 border border-black/5 dark:border-white/5 text-slate-700 dark:text-slate-300"></div>
+            
+            <button id="start-btn" class="w-full py-5 btn-primary text-white font-black font-brand text-lg rounded-2xl tracking-tight">
+                LAUNCH EXAM
             </button>
         </div>
 
-        <!-- Exam Content -->
-        <div id="exam-content" class="hidden w-full h-full max-w-6xl">
-            <div class="glass-panel rounded-xl overflow-hidden shadow-2xl">
-                <iframe id="pdf-viewer" src="" class="w-full h-full"></iframe>
+        <!-- Exam View -->
+        <div id="exam-content" class="hidden w-full h-full max-w-7xl">
+            <div class="bg-zinc-200 dark:bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl border border-black/5 dark:border-white/5">
+                <iframe id="pdf-viewer" src="" allow="autoplay"></iframe>
             </div>
         </div>
 
-        <!-- Completion Screen -->
-        <div id="completion-screen" class="hidden max-w-2xl w-full glass-panel p-10 rounded-2xl text-center border-2 border-green-500/50">
-            <div class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-check text-4xl"></i>
+        <!-- Completion View -->
+        <div id="completion-screen" class="hidden max-w-md w-full glass-morphism p-10 rounded-[3rem] text-center border-2 border-emerald-500/20 shadow-2xl">
+            <div class="w-16 h-16 bg-emerald-500 text-black rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30">
+                <i class="fas fa-check text-2xl"></i>
             </div>
-            <h2 class="text-3xl font-bold mb-2 font-orbitron text-white">SESSION COMPLETE</h2>
-            <p class="text-gray-400 mb-8">Your exam has been logged. Please copy the code below.</p>
+            <h2 class="text-3xl font-brand font-black mb-2 tracking-tighter uppercase text-slate-900 dark:text-white">Submitted</h2>
+            <p class="text-slate-500 dark:text-gray-400 text-xs mb-8">Session secured. Resources locked.</p>
 
-            <div class="code-box p-6 rounded-xl mb-8 relative">
-                <p class="text-xs uppercase text-cyan-400 mb-2 font-bold tracking-widest">Verification Code</p>
-                <div id="unique-code" class="text-2xl font-orbitron text-white break-all">--</div>
-                <button onclick="copyCode()" class="mt-4 text-xs bg-cyan-500/20 text-cyan-400 px-4 py-2 rounded border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-all">
-                    <i class="fas fa-copy mr-2"></i>COPY CODE
+            <div id="unlock-container" class="space-y-4 mb-8">
+                <input type="password" id="solution-pass" placeholder="Enter Access Key" class="w-full bg-white/50 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl px-6 py-4 text-center text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500/50 transition-all font-brand tracking-widest">
+                <button id="unlock-btn" class="w-full py-4 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-slate-900 dark:text-white font-bold rounded-2xl transition-all uppercase text-xs tracking-[0.2em]">
+                    Unlock Resources
                 </button>
+                <p id="pass-error" class="text-red-500 text-[10px] font-bold uppercase hidden">Invalid Access Key</p>
             </div>
 
-            <div class="space-y-4">
-                <p class="text-sm text-gray-500 uppercase tracking-widest">Next Steps</p>
-                <a id="discussion-link" href="#" target="_blank" class="block w-full py-4 bg-purple-600 text-white font-bold font-orbitron rounded-xl hover:bg-purple-500 transition-all shadow-lg shadow-purple-500/20">
-                    ACCESS DISCUSSION & MARKING
-                </a>
+            <div id="post-exam-actions" class="hidden space-y-4">
+                <div class="code-display p-6 rounded-2xl mb-6 relative">
+                    <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-2 tracking-widest uppercase">Verification Hash</p>
+                    <div id="unique-code" class="text-2xl font-brand font-bold tracking-tighter text-slate-900 dark:text-white">--</div>
+                    <button id="copy-hash-btn" onclick="copyCode(this)" class="mt-4 bg-zinc-200 dark:bg-zinc-800 text-slate-900 dark:text-white text-[9px] px-4 py-1.5 rounded-full border border-black/10 dark:border-white/10 hover:bg-emerald-500 hover:text-black transition-all font-bold">
+                        COPY HASH
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <a id="video-link" href="#" target="_blank" class="flex flex-col items-center justify-center gap-2 p-5 bg-black/5 dark:bg-white/10 hover:bg-emerald-500 hover:text-black text-slate-700 dark:text-white rounded-2xl transition-all border border-black/5 dark:border-white/5">
+                        <i class="fas fa-play-circle text-2xl"></i>
+                        <span class="font-brand font-bold uppercase text-[10px] tracking-widest">Discussion</span>
+                    </a>
+                    <a id="marking-link" href="#" target="_blank" class="flex flex-col items-center justify-center gap-2 p-5 bg-black/5 dark:bg-white/10 hover:bg-emerald-500 hover:text-black text-slate-700 dark:text-white rounded-2xl transition-all border border-black/5 dark:border-white/5">
+                        <i class="fas fa-file-invoice text-2xl"></i>
+                        <span class="font-brand font-bold uppercase text-[10px] tracking-widest">Solutions</span>
+                    </a>
+                </div>
             </div>
         </div>
-
     </main>
 
-    <footer class="p-4 text-center text-gray-600 text-xs uppercase tracking-tighter">
-        Nexus Proctored Environment v2.4 // Auth Status: Verified
-    </footer>
-
     <script>
-        /** * CONFIGURATION
-         * Replace with your Google Sheet published CSV URL
-         * To get this: File > Share > Publish to web > Select Sheet1 & CSV > Publish
-         */
-        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5K76Piv-70q_D-iB163n9Tj_l8i0j8_E-N83Z4B3H_P5nN8pG2_8q1_O9n2K_z4fX-B2k1G7U7A1/pub?output=csv'; 
-        
-        // Mock data fallback if URL is invalid/empty
-        let examData = {
-            paperLink: '',
-            markingLink: '',
-            duration: 60
-        };
+        const SPREADSHEET_ID = '1FXda-d2eGdnvg0byWgP-HNNYJh8qvByG-14D7nFpsrY'; 
+        const API_KEY = "AIzaSyDKj90xk6yxbJWM32XNHEu4Ky24UzWwRgo";
+        const RANGE = 'Sheet1!A:E'; 
 
-        const elements = {
-            loading: document.getElementById('loading-screen'),
-            start: document.getElementById('start-screen'),
-            exam: document.getElementById('exam-content'),
-            complete: document.getElementById('completion-screen'),
-            timerDisplay: document.getElementById('timer-display'),
-            timerContainer: document.getElementById('timer-container'),
-            pdfViewer: document.getElementById('pdf-viewer'),
-            details: document.getElementById('exam-details'),
-            uniqueCode: document.getElementById('unique-code'),
-            discussionLink: document.getElementById('discussion-link'),
-            finishBtn: document.getElementById('finish-btn')
-        };
-
+        let examData = { paperLink: '', videoLink: '', markingLink: '', duration: 60, password: '' };
         let timerInterval;
-        let timeLeft = 0;
+        let elements = {};
 
-        // 1. DATA FETCHING
-        async function fetchExamData() {
-            try {
-                const response = await fetch(SHEET_CSV_URL);
-                const text = await response.text();
-                const rows = text.split('\n').map(row => row.split(','));
-                
-                // Assuming Sheet Structure:
-                // Paper Link | Marking Link | Duration (Mins)
-                // [Row 1 is headers, Row 2 is data]
-                if (rows.length > 1) {
-                    examData.paperLink = rows[1][0].trim();
-                    examData.markingLink = rows[1][1].trim();
-                    examData.duration = parseInt(rows[1][2].trim()) || 60;
-                }
-                
-                initPortal();
-            } catch (error) {
-                console.error("Fetch failed, using defaults", error);
-                // Fallback for demo purposes if sheet link is not provided
-                examData = {
-                    paperLink: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-                    markingLink: 'https://google.com',
-                    duration: 60
-                };
-                initPortal();
+        // Theme Logic
+        function initTheme() {
+            const savedTheme = localStorage.getItem('portal_theme') || 'dark';
+            if (savedTheme === 'light') {
+                document.body.classList.remove('dark');
+                document.documentElement.classList.remove('dark');
+            } else {
+                document.body.classList.add('dark');
+                document.documentElement.classList.add('dark');
             }
         }
 
-        // 2. CORE LOGIC
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark');
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('portal_theme', isDark ? 'dark' : 'light');
+        }
+
+        // Helper to initialize elements safely
+        function initElements() {
+            const ids = [
+                'loading-screen', 'start-screen', 'exam-content', 'completion-screen',
+                'timer-display', 'timer-container', 'pdf-viewer', 'exam-details',
+                'unique-code', 'video-link', 'marking-link', 'finish-btn',
+                'solution-pass', 'unlock-btn', 'unlock-container', 'post-exam-actions',
+                'pass-error', 'start-btn'
+            ];
+            ids.forEach(id => {
+                elements[id.replace(/-([a-z])/g, (g) => g[1].toUpperCase())] = document.getElementById(id);
+            });
+        }
+
+        function formatGDriveLink(link) {
+            if (!link) return '';
+            link = link.trim();
+            if (link.includes('drive.google.com')) {
+                if (link.includes('/view')) return link.replace('/view', '/preview');
+                if (link.includes('?id=')) {
+                    const id = link.split('id=')[1].split('&')[0];
+                    return `https://drive.google.com/file/d/${id}/preview`;
+                }
+                if (link.includes('/open?id=')) {
+                    const id = link.split('id=')[1];
+                    return `https://drive.google.com/file/d/${id}/preview`;
+                }
+            }
+            return link;
+        }
+
+        async function fetchExamDataWithBackoff(retries = 5, delay = 1000) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestedRow = parseInt(urlParams.get('paper')) || 2; 
+            const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(sheetUrl);
+                    if (!response.ok) throw new Error('API request failed');
+                    const data = await response.json();
+                    const values = data.values;
+                    
+                    if (values && values.length >= requestedRow) {
+                        const row = values[requestedRow - 1]; 
+                        examData = {
+                            paperLink: formatGDriveLink(row[0] || ''),
+                            videoLink: row[1] || '#',
+                            markingLink: row[2] || '#',
+                            duration: parseInt(row[3]) || 60,
+                            password: row[4] || ''
+                        };
+                        return initPortal();
+                    } else {
+                        throw new Error("Row not found");
+                    }
+                } catch (error) {
+                    if (i === retries - 1) {
+                        showError(error.message);
+                        return;
+                    }
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        function showError(msg) {
+            if (elements.loadingScreen) {
+                elements.loadingScreen.innerHTML = `<p class="text-red-500 font-bold uppercase text-xs tracking-widest">${msg}</p>`;
+            }
+        }
+
         function initPortal() {
-            elements.loading.classList.add('hidden');
-            
-            // Check Lockout
-            if (localStorage.getItem('nexus_exam_complete')) {
-                showCompletion();
+            if (elements.loadingScreen) elements.loadingScreen.classList.add('hidden');
+            const urlParams = new URLSearchParams(window.location.search);
+            const paperId = urlParams.get('paper') || '2';
+            const completeKey = `nexus_exam_complete_${paperId}`;
+            const timerKey = `nexus_timer_end_${paperId}`;
+
+            if (localStorage.getItem(completeKey)) {
+                showCompletion(paperId);
                 return;
             }
 
-            // Check if timer is already running
-            const savedTime = localStorage.getItem('nexus_timer_end');
-            if (savedTime) {
-                const now = Date.now();
-                if (now < savedTime) {
-                    startExam(true);
-                } else {
-                    finishExam();
-                }
+            const savedTime = localStorage.getItem(timerKey);
+            if (savedTime && Date.now() < savedTime) {
+                startExam(paperId, true);
+            } else if (savedTime) {
+                finishExam(paperId);
             } else {
                 showStartScreen();
             }
         }
 
         function showStartScreen() {
-            elements.details.innerHTML = `
-                <p>Duration: <span class="text-white">${examData.duration} Minutes</span></p>
-                <p>Content: <span class="text-white">Proctored PDF Document</span></p>
-            `;
-            elements.start.classList.remove('hidden');
+            if (elements.examDetails) {
+                elements.examDetails.innerHTML = `
+                    <div class="flex justify-between items-center"><span class="uppercase tracking-widest font-bold text-[10px] opacity-60">Session Limit</span><b class="font-brand text-lg text-emerald-500">${examData.duration} min</b></div>
+                `;
+            }
+            if (elements.startScreen) elements.startScreen.classList.remove('hidden');
         }
 
-        function startExam(isResume = false) {
-            elements.start.classList.add('hidden');
-            elements.exam.classList.remove('hidden');
-            elements.timerContainer.classList.remove('hidden');
-            elements.pdfViewer.src = examData.paperLink;
+        function startExam(paperId, isResume = false) {
+            if (elements.startScreen) elements.startScreen.classList.add('hidden');
+            if (elements.examContent) elements.examContent.classList.remove('hidden');
+            if (elements.timerContainer) elements.timerContainer.classList.remove('hidden');
+            if (elements.pdfViewer) elements.pdfViewer.src = examData.paperLink;
 
-            let endTime;
-            if (isResume) {
-                endTime = parseInt(localStorage.getItem('nexus_timer_end'));
-            } else {
-                endTime = Date.now() + (examData.duration * 60 * 1000);
-                localStorage.setItem('nexus_timer_end', endTime);
-            }
+            const timerKey = `nexus_timer_end_${paperId}`;
+            let endTime = isResume ? parseInt(localStorage.getItem(timerKey)) : Date.now() + (examData.duration * 60 * 1000);
+            if (!isResume) localStorage.setItem(timerKey, endTime);
 
-            updateTimer(endTime);
-            timerInterval = setInterval(() => updateTimer(endTime), 1000);
+            updateTimer(paperId, endTime);
+            timerInterval = setInterval(() => updateTimer(paperId, endTime), 1000);
         }
 
-        function updateTimer(endTime) {
-            const now = Date.now();
-            const diff = endTime - now;
-
-            if (diff <= 0) {
-                finishExam();
-                return;
-            }
-
-            const h = Math.floor(diff / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-
-            elements.timerDisplay.innerText = 
-                `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-            
-            if (diff < 300000) { // Under 5 mins
-                elements.timerDisplay.classList.replace('neon-text', 'text-red-500');
-            }
+        function updateTimer(paperId, endTime) {
+            const diff = endTime - Date.now();
+            if (diff <= 0) { finishExam(paperId); return; }
+            const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
+            if (elements.timerDisplay) elements.timerDisplay.innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
 
-        function finishExam() {
+        function finishExam(paperId) {
             clearInterval(timerInterval);
-            localStorage.removeItem('nexus_timer_end');
-            localStorage.setItem('nexus_exam_complete', 'true');
+            const paperHash = `QM-${paperId}-${Date.now().toString(36).toUpperCase()}`;
+            localStorage.setItem(`nexus_exam_complete_${paperId}`, 'true');
+            localStorage.setItem(`nexus_hash_${paperId}`, paperHash);
+            localStorage.removeItem(`nexus_timer_end_${paperId}`);
+            showCompletion(paperId);
+        }
+
+        function showCompletion(paperId) {
+            if (elements.startScreen) elements.startScreen.classList.add('hidden');
+            if (elements.examContent) elements.examContent.classList.add('hidden');
+            if (elements.timerContainer) elements.timerContainer.classList.add('hidden');
+            if (elements.completionScreen) elements.completionScreen.classList.remove('hidden');
             
-            // Generate Code
-            const prefix = "NX";
-            const timestamp = Date.now().toString(36).toUpperCase();
-            const random = Math.random().toString(36).substring(2, 5).toUpperCase();
-            const code = `${prefix}-${timestamp}-${random}`;
-            localStorage.setItem('nexus_completion_code', code);
+            if (elements.uniqueCode) elements.uniqueCode.innerText = localStorage.getItem(`nexus_hash_${paperId}`) || "--";
+            if (elements.videoLink) elements.videoLink.href = examData.videoLink;
+            if (elements.markingLink) elements.markingLink.href = examData.markingLink;
 
-            showCompletion();
+            if (sessionStorage.getItem(`nexus_unlocked_${paperId}`)) unlockResources();
         }
 
-        function showCompletion() {
-            elements.start.classList.add('hidden');
-            elements.exam.classList.add('hidden');
-            elements.timerContainer.classList.add('hidden');
-            elements.complete.classList.remove('hidden');
-            
-            const savedCode = localStorage.getItem('nexus_completion_code');
-            elements.uniqueCode.innerText = savedCode || "CODE_ERROR";
-            elements.discussionLink.href = examData.markingLink;
+        function unlockResources() {
+            if (elements.unlockContainer) elements.unlockContainer.classList.add('hidden');
+            if (elements.postActions) elements.postActions.classList.remove('hidden');
         }
 
-        function copyCode() {
-            const code = elements.uniqueCode.innerText;
-            const tempInput = document.createElement('input');
-            tempInput.value = code;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            
-            const btn = event.currentTarget;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check mr-2"></i>COPIED!';
-            setTimeout(() => btn.innerHTML = originalText, 2000);
-        }
+        // Attach event listeners safely
+        function setupEventListeners() {
+            const paperId = new URLSearchParams(window.location.search).get('paper') || '2';
 
-        // 3. SECURITY
-        function setupSecurity() {
-            // Disable Right Click
-            document.addEventListener('contextmenu', e => {
-                e.preventDefault();
-                showSecurityMsg();
-            });
-
-            // Disable Keyboard Shortcuts
-            document.addEventListener('keydown', e => {
-                if (
-                    (e.ctrlKey && (e.key === 's' || e.key === 'u' || e.key === 'p' || e.key === 'i')) ||
-                    (e.metaKey && (e.key === 's' || e.key === 'u' || e.key === 'p' || e.key === 'i')) ||
-                    e.key === 'F12'
-                ) {
-                    e.preventDefault();
-                    showSecurityMsg();
-                }
-            });
-        }
-
-        function showSecurityMsg() {
-            document.getElementById('security-msg').style.display = 'flex';
-        }
-
-        // EVENT LISTENERS
-        document.getElementById('start-btn').addEventListener('click', () => startExam());
-        elements.finishBtn.addEventListener('click', () => {
-            if(confirm("Are you sure you want to end the exam? You cannot go back.")) {
-                finishExam();
+            if (elements.startBtn) {
+                elements.startBtn.addEventListener('click', () => startExam(paperId));
             }
-        });
+            if (elements.finishBtn) {
+                elements.finishBtn.addEventListener('click', () => {
+                    if (confirm("End Session? This will submit your progress and lock the paper.")) finishExam(paperId);
+                });
+            }
+            if (elements.unlockBtn) {
+                elements.unlockBtn.addEventListener('click', () => {
+                    if (elements.solutionPass.value.trim() === String(examData.password)) {
+                        sessionStorage.setItem(`nexus_unlocked_${paperId}`, 'true');
+                        unlockResources();
+                    } else {
+                        elements.passError.classList.remove('hidden');
+                        setTimeout(() => elements.passError.classList.add('hidden'), 2000);
+                    }
+                });
+            }
+        }
 
-        // Initialize
-        window.onload = () => {
-            setupSecurity();
-            fetchExamData();
+        window.copyCode = function(btn) {
+            const code = elements.uniqueCode.innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const old = btn.innerText;
+                btn.innerText = "COPIED";
+                setTimeout(() => btn.innerText = old, 2000);
+            });
         };
 
+        window.onload = () => {
+            initTheme();
+            initElements();
+            setupEventListeners();
+            fetchExamDataWithBackoff();
+        };
     </script>
 </body>
 </html>
