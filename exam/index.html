@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Exam Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-purple: #bc13fe;
+            --bg-dark: #0a0a0c;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+
+        .neon-border {
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .neon-text {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.6);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .timer-glow {
+            text-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        #pdf-frame {
+            width: 100%;
+            height: calc(100vh - 180px);
+            border: none;
+        }
+
+        .code-box {
+            background: linear-gradient(135deg, rgba(188, 19, 254, 0.1), rgba(0, 243, 255, 0.1));
+            border: 2px dashed var(--neon-cyan);
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid #1a1a1a;
+            border-top: 4px solid var(--neon-cyan);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Security Overlay for Right Click -->
+    <div id="security-msg" class="fixed inset-0 bg-black/90 z-[100] hidden items-center justify-center text-center p-6">
+        <div>
+            <i class="fas fa-shield-alt text-6xl text-red-500 mb-4"></i>
+            <h2 class="text-2xl font-bold text-white mb-2">Security Violation</h2>
+            <p class="text-gray-400">Right-click and shortcuts are disabled to protect exam integrity.</p>
+            <button onclick="document.getElementById('security-msg').style.display='none'" class="mt-6 px-6 py-2 bg-cyan-600 text-white rounded">Resume Exam</button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="p-4 glass-panel flex flex-wrap justify-between items-center gap-4 z-10 sticky top-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+                <i class="fas fa-atom text-white text-xl"></i>
+            </div>
+            <h1 class="font-orbitron font-bold text-xl tracking-wider neon-text uppercase">Nexus Exam Portal</h1>
+        </div>
+
+        <div id="timer-container" class="flex items-center gap-4 hidden">
+            <div class="text-right">
+                <p class="text-[10px] uppercase tracking-widest text-gray-400">Time Remaining</p>
+                <p id="timer-display" class="font-orbitron text-3xl neon-text timer-glow">00:00:00</p>
+            </div>
+            <button id="finish-btn" class="px-6 py-2 bg-red-500/20 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all rounded font-bold uppercase text-sm">
+                End Exam
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow relative flex flex-col items-center justify-center p-4">
+        
+        <!-- Loading State -->
+        <div id="loading-screen" class="flex flex-col items-center">
+            <div class="loader mb-4"></div>
+            <p class="font-orbitron text-cyan-400 tracking-widest animate-pulse">SYNCING DATA...</p>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="hidden max-w-md w-full glass-panel p-8 rounded-2xl text-center neon-border">
+            <i class="fas fa-file-invoice text-5xl mb-6 text-purple-500"></i>
+            <h2 class="text-2xl font-bold mb-4 font-orbitron">EXAM READY</h2>
+            <div id="exam-details" class="text-gray-400 mb-8 space-y-2">
+                <!-- Injected via JS -->
+            </div>
+            <button id="start-btn" class="w-full py-4 bg-cyan-500 text-black font-bold font-orbitron rounded-xl hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20">
+                INITIATE SESSION
+            </button>
+        </div>
+
+        <!-- Exam Content -->
+        <div id="exam-content" class="hidden w-full h-full max-w-6xl">
+            <div class="glass-panel rounded-xl overflow-hidden shadow-2xl">
+                <iframe id="pdf-viewer" src="" class="w-full h-full"></iframe>
+            </div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div id="completion-screen" class="hidden max-w-2xl w-full glass-panel p-10 rounded-2xl text-center border-2 border-green-500/50">
+            <div class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check text-4xl"></i>
+            </div>
+            <h2 class="text-3xl font-bold mb-2 font-orbitron text-white">SESSION COMPLETE</h2>
+            <p class="text-gray-400 mb-8">Your exam has been logged. Please copy the code below.</p>
+
+            <div class="code-box p-6 rounded-xl mb-8 relative">
+                <p class="text-xs uppercase text-cyan-400 mb-2 font-bold tracking-widest">Verification Code</p>
+                <div id="unique-code" class="text-2xl font-orbitron text-white break-all">--</div>
+                <button onclick="copyCode()" class="mt-4 text-xs bg-cyan-500/20 text-cyan-400 px-4 py-2 rounded border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-all">
+                    <i class="fas fa-copy mr-2"></i>COPY CODE
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-sm text-gray-500 uppercase tracking-widest">Next Steps</p>
+                <a id="discussion-link" href="#" target="_blank" class="block w-full py-4 bg-purple-600 text-white font-bold font-orbitron rounded-xl hover:bg-purple-500 transition-all shadow-lg shadow-purple-500/20">
+                    ACCESS DISCUSSION & MARKING
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="p-4 text-center text-gray-600 text-xs uppercase tracking-tighter">
+        Nexus Proctored Environment v2.4 // Auth Status: Verified
+    </footer>
+
+    <script>
+        /** * CONFIGURATION
+         * Replace with your Google Sheet published CSV URL
+         * To get this: File > Share > Publish to web > Select Sheet1 & CSV > Publish
+         */
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5K76Piv-70q_D-iB163n9Tj_l8i0j8_E-N83Z4B3H_P5nN8pG2_8q1_O9n2K_z4fX-B2k1G7U7A1/pub?output=csv'; 
+        
+        // Mock data fallback if URL is invalid/empty
+        let examData = {
+            paperLink: '',
+            markingLink: '',
+            duration: 60
+        };
+
+        const elements = {
+            loading: document.getElementById('loading-screen'),
+            start: document.getElementById('start-screen'),
+            exam: document.getElementById('exam-content'),
+            complete: document.getElementById('completion-screen'),
+            timerDisplay: document.getElementById('timer-display'),
+            timerContainer: document.getElementById('timer-container'),
+            pdfViewer: document.getElementById('pdf-viewer'),
+            details: document.getElementById('exam-details'),
+            uniqueCode: document.getElementById('unique-code'),
+            discussionLink: document.getElementById('discussion-link'),
+            finishBtn: document.getElementById('finish-btn')
+        };
+
+        let timerInterval;
+        let timeLeft = 0;
+
+        // 1. DATA FETCHING
+        async function fetchExamData() {
+            try {
+                const response = await fetch(SHEET_CSV_URL);
+                const text = await response.text();
+                const rows = text.split('\n').map(row => row.split(','));
+                
+                // Assuming Sheet Structure:
+                // Paper Link | Marking Link | Duration (Mins)
+                // [Row 1 is headers, Row 2 is data]
+                if (rows.length > 1) {
+                    examData.paperLink = rows[1][0].trim();
+                    examData.markingLink = rows[1][1].trim();
+                    examData.duration = parseInt(rows[1][2].trim()) || 60;
+                }
+                
+                initPortal();
+            } catch (error) {
+                console.error("Fetch failed, using defaults", error);
+                // Fallback for demo purposes if sheet link is not provided
+                examData = {
+                    paperLink: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                    markingLink: 'https://google.com',
+                    duration: 60
+                };
+                initPortal();
+            }
+        }
+
+        // 2. CORE LOGIC
+        function initPortal() {
+            elements.loading.classList.add('hidden');
+            
+            // Check Lockout
+            if (localStorage.getItem('nexus_exam_complete')) {
+                showCompletion();
+                return;
+            }
+
+            // Check if timer is already running
+            const savedTime = localStorage.getItem('nexus_timer_end');
+            if (savedTime) {
+                const now = Date.now();
+                if (now < savedTime) {
+                    startExam(true);
+                } else {
+                    finishExam();
+                }
+            } else {
+                showStartScreen();
+            }
+        }
+
+        function showStartScreen() {
+            elements.details.innerHTML = `
+                <p>Duration: <span class="text-white">${examData.duration} Minutes</span></p>
+                <p>Content: <span class="text-white">Proctored PDF Document</span></p>
+            `;
+            elements.start.classList.remove('hidden');
+        }
+
+        function startExam(isResume = false) {
+            elements.start.classList.add('hidden');
+            elements.exam.classList.remove('hidden');
+            elements.timerContainer.classList.remove('hidden');
+            elements.pdfViewer.src = examData.paperLink;
+
+            let endTime;
+            if (isResume) {
+                endTime = parseInt(localStorage.getItem('nexus_timer_end'));
+            } else {
+                endTime = Date.now() + (examData.duration * 60 * 1000);
+                localStorage.setItem('nexus_timer_end', endTime);
+            }
+
+            updateTimer(endTime);
+            timerInterval = setInterval(() => updateTimer(endTime), 1000);
+        }
+
+        function updateTimer(endTime) {
+            const now = Date.now();
+            const diff = endTime - now;
+
+            if (diff <= 0) {
+                finishExam();
+                return;
+            }
+
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+
+            elements.timerDisplay.innerText = 
+                `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            
+            if (diff < 300000) { // Under 5 mins
+                elements.timerDisplay.classList.replace('neon-text', 'text-red-500');
+            }
+        }
+
+        function finishExam() {
+            clearInterval(timerInterval);
+            localStorage.removeItem('nexus_timer_end');
+            localStorage.setItem('nexus_exam_complete', 'true');
+            
+            // Generate Code
+            const prefix = "NX";
+            const timestamp = Date.now().toString(36).toUpperCase();
+            const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+            const code = `${prefix}-${timestamp}-${random}`;
+            localStorage.setItem('nexus_completion_code', code);
+
+            showCompletion();
+        }
+
+        function showCompletion() {
+            elements.start.classList.add('hidden');
+            elements.exam.classList.add('hidden');
+            elements.timerContainer.classList.add('hidden');
+            elements.complete.classList.remove('hidden');
+            
+            const savedCode = localStorage.getItem('nexus_completion_code');
+            elements.uniqueCode.innerText = savedCode || "CODE_ERROR";
+            elements.discussionLink.href = examData.markingLink;
+        }
+
+        function copyCode() {
+            const code = elements.uniqueCode.innerText;
+            const tempInput = document.createElement('input');
+            tempInput.value = code;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check mr-2"></i>COPIED!';
+            setTimeout(() => btn.innerHTML = originalText, 2000);
+        }
+
+        // 3. SECURITY
+        function setupSecurity() {
+            // Disable Right Click
+            document.addEventListener('contextmenu', e => {
+                e.preventDefault();
+                showSecurityMsg();
+            });
+
+            // Disable Keyboard Shortcuts
+            document.addEventListener('keydown', e => {
+                if (
+                    (e.ctrlKey && (e.key === 's' || e.key === 'u' || e.key === 'p' || e.key === 'i')) ||
+                    (e.metaKey && (e.key === 's' || e.key === 'u' || e.key === 'p' || e.key === 'i')) ||
+                    e.key === 'F12'
+                ) {
+                    e.preventDefault();
+                    showSecurityMsg();
+                }
+            });
+        }
+
+        function showSecurityMsg() {
+            document.getElementById('security-msg').style.display = 'flex';
+        }
+
+        // EVENT LISTENERS
+        document.getElementById('start-btn').addEventListener('click', () => startExam());
+        elements.finishBtn.addEventListener('click', () => {
+            if(confirm("Are you sure you want to end the exam? You cannot go back.")) {
+                finishExam();
+            }
+        });
+
+        // Initialize
+        window.onload = () => {
+            setupSecurity();
+            fetchExamData();
+        };
+
+    </script>
+</body>
+</html>
