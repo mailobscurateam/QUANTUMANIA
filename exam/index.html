@@ -23,6 +23,7 @@
 
         body {
             transition: background-color 0.4s ease, color 0.4s ease;
+            user-select: none;
         }
 
         body.dark {
@@ -114,7 +115,6 @@
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Custom toggle switch styling */
         .theme-toggle-btn {
             width: 44px;
             height: 24px;
@@ -211,12 +211,13 @@
 
         <!-- Completion View -->
         <div id="completion-screen" class="hidden max-w-md w-full glass-morphism p-10 rounded-[3rem] text-center border-2 border-emerald-500/20 shadow-2xl">
-            <div class="w-16 h-16 bg-emerald-500 text-black rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30">
+            <div id="completion-header-icon" class="w-16 h-16 bg-emerald-500 text-black rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30">
                 <i class="fas fa-check text-2xl"></i>
             </div>
             <h2 class="text-3xl font-brand font-black mb-2 tracking-tighter uppercase text-slate-900 dark:text-white">Submitted</h2>
             <p class="text-slate-500 dark:text-gray-400 text-xs mb-8">Session secured. Resources locked.</p>
 
+            <!-- Access Gate -->
             <div id="unlock-container" class="space-y-4 mb-8">
                 <input type="password" id="solution-pass" placeholder="Enter Access Key" class="w-full bg-white/50 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl px-6 py-4 text-center text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500/50 transition-all font-brand tracking-widest">
                 <button id="unlock-btn" class="w-full py-4 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-slate-900 dark:text-white font-bold rounded-2xl transition-all uppercase text-xs tracking-[0.2em]">
@@ -225,6 +226,7 @@
                 <p id="pass-error" class="text-red-500 text-[10px] font-bold uppercase hidden">Invalid Access Key</p>
             </div>
 
+            <!-- Post Exam Resources -->
             <div id="post-exam-actions" class="hidden space-y-4">
                 <div class="code-display p-6 rounded-2xl mb-6 relative">
                     <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-2 tracking-widest uppercase">Verification Hash</p>
@@ -257,7 +259,6 @@
         let timerInterval;
         let elements = {};
 
-        // Theme Logic
         function initTheme() {
             const savedTheme = localStorage.getItem('portal_theme') || 'dark';
             if (savedTheme === 'light') {
@@ -275,7 +276,6 @@
             localStorage.setItem('portal_theme', isDark ? 'dark' : 'light');
         }
 
-        // Helper to initialize elements safely
         function initElements() {
             const ids = [
                 'loading-screen', 'start-screen', 'exam-content', 'completion-screen',
@@ -285,7 +285,8 @@
                 'pass-error', 'start-btn'
             ];
             ids.forEach(id => {
-                elements[id.replace(/-([a-z])/g, (g) => g[1].toUpperCase())] = document.getElementById(id);
+                const camelCaseId = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                elements[camelCaseId] = document.getElementById(id);
             });
         }
 
@@ -419,17 +420,27 @@
             if (elements.videoLink) elements.videoLink.href = examData.videoLink;
             if (elements.markingLink) elements.markingLink.href = examData.markingLink;
 
-            if (sessionStorage.getItem(`nexus_unlocked_${paperId}`)) unlockResources();
+            if (sessionStorage.getItem(`nexus_unlocked_${paperId}`)) {
+                unlockResources();
+            }
         }
 
         function unlockResources() {
             if (elements.unlockContainer) elements.unlockContainer.classList.add('hidden');
-            if (elements.postActions) elements.postActions.classList.remove('hidden');
+            if (elements.postExamActions) elements.postExamActions.classList.remove('hidden');
+            
+            // Visual feedback
+            const headerIcon = document.getElementById('completion-header-icon');
+            if (headerIcon) {
+                headerIcon.classList.remove('bg-emerald-500');
+                headerIcon.classList.add('bg-blue-500');
+                headerIcon.innerHTML = '<i class="fas fa-lock-open text-2xl"></i>';
+            }
         }
 
-        // Attach event listeners safely
         function setupEventListeners() {
-            const paperId = new URLSearchParams(window.location.search).get('paper') || '2';
+            const urlParams = new URLSearchParams(window.location.search);
+            const paperId = urlParams.get('paper') || '2';
 
             if (elements.startBtn) {
                 elements.startBtn.addEventListener('click', () => startExam(paperId));
@@ -441,7 +452,8 @@
             }
             if (elements.unlockBtn) {
                 elements.unlockBtn.addEventListener('click', () => {
-                    if (elements.solutionPass.value.trim() === String(examData.password)) {
+                    const inputPass = elements.solutionPass.value.trim();
+                    if (inputPass === String(examData.password)) {
                         sessionStorage.setItem(`nexus_unlocked_${paperId}`, 'true');
                         unlockResources();
                     } else {
