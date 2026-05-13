@@ -184,7 +184,17 @@
         <!-- Loading -->
         <div id="loading-screen" class="flex flex-col items-center">
             <div class="loader-ring mb-6"></div>
-            <p class="font-brand text-sm font-bold text-gray-400 tracking-[0.3em] uppercase animate-pulse">Syncing Matrix...</p>
+            <p id="loading-status" class="font-brand text-sm font-bold text-gray-400 tracking-[0.3em] uppercase animate-pulse">Syncing Matrix...</p>
+        </div>
+
+        <!-- Date Restricted Screen -->
+        <div id="restricted-screen" class="hidden max-w-sm w-full glass-morphism p-10 rounded-[2.5rem] text-center quantum-border">
+            <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-calendar-times text-2xl text-red-500"></i>
+            </div>
+            <h2 class="text-2xl font-brand font-black mb-2 tracking-tighter uppercase text-slate-900 dark:text-white">Portal Closed</h2>
+            <p id="restriction-msg" class="text-slate-500 dark:text-gray-500 text-sm mb-6 leading-relaxed">This session is not currently active.</p>
+            <div id="restricted-details" class="bg-black/5 dark:bg-black/20 rounded-2xl p-4 text-xs space-y-2 border border-black/5 dark:border-white/5 text-slate-700 dark:text-slate-300"></div>
         </div>
 
         <!-- Start Screen -->
@@ -192,10 +202,10 @@
             <div class="w-16 h-16 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
                 <i class="fas fa-bolt text-2xl text-emerald-500 dark:text-emerald-400"></i>
             </div>
-            <h2 class="text-3xl font-brand font-black mb-2 tracking-tighter uppercase text-slate-900 dark:text-white">Initiate Session</h2>
+            <h2 id="session-name-display" class="text-3xl font-brand font-black mb-2 tracking-tighter uppercase text-slate-900 dark:text-white">Initiate Session</h2>
             <p class="text-slate-500 dark:text-gray-500 text-sm mb-8 leading-relaxed">Matrix stable. Connection encrypted.</p>
             
-            <div id="exam-details" class="bg-black/5 dark:bg-black/20 rounded-2xl p-4 mb-8 text-sm space-y-2 border border-black/5 dark:border-white/5 text-slate-700 dark:text-slate-300"></div>
+            <div id="exam-details" class="bg-black/5 dark:bg-black/20 rounded-2xl p-4 mb-8 text-sm space-y-3 border border-black/5 dark:border-white/5 text-slate-700 dark:text-slate-300"></div>
             
             <button id="start-btn" class="w-full py-5 btn-primary text-white font-black font-brand text-lg rounded-2xl tracking-tight">
                 LAUNCH EXAM
@@ -253,9 +263,13 @@
     <script>
         const SPREADSHEET_ID = '1FXda-d2eGdnvg0byWgP-HNNYJh8qvByG-14D7nFpsrY'; 
         const API_KEY = "AIzaSyDKj90xk6yxbJWM32XNHEu4Ky24UzWwRgo";
-        const RANGE = 'Sheet1!A:E'; 
+        const RANGE = 'Sheet1!A:H'; 
 
-        let examData = { paperLink: '', videoLink: '', markingLink: '', duration: 60, password: '' };
+        let examData = { 
+            paperLink: '', videoLink: '', markingLink: '', 
+            duration: 60, password: '', 
+            sessionName: 'Initiate Session', startDate: null, endDate: null 
+        };
         let timerInterval;
         let elements = {};
 
@@ -282,7 +296,8 @@
                 'timer-display', 'timer-container', 'pdf-viewer', 'exam-details',
                 'unique-code', 'video-link', 'marking-link', 'finish-btn',
                 'solution-pass', 'unlock-btn', 'unlock-container', 'post-exam-actions',
-                'pass-error', 'start-btn'
+                'pass-error', 'start-btn', 'restricted-screen', 'restriction-msg',
+                'restricted-details', 'session-name-display', 'loading-status'
             ];
             ids.forEach(id => {
                 const camelCaseId = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
@@ -326,9 +341,12 @@
                             videoLink: row[1] || '#',
                             markingLink: row[2] || '#',
                             duration: parseInt(row[3]) || 60,
-                            password: row[4] || ''
+                            password: row[4] || '',
+                            sessionName: row[5] || 'Initiate Session',
+                            startDate: row[6] ? new Date(row[6]) : null,
+                            endDate: row[7] ? new Date(row[7]) : null
                         };
-                        return initPortal();
+                        return validateAccess();
                     } else {
                         throw new Error("Row not found");
                     }
@@ -343,14 +361,63 @@
             }
         }
 
+        function validateAccess() {
+            if (elements.loadingScreen) elements.loadingScreen.classList.add('hidden');
+            
+            const now = new Date();
+            let isRestricted = false;
+            let restrictionType = '';
+
+            if (examData.startDate && now < examData.startDate) {
+                isRestricted = true;
+                restrictionType = 'future';
+            } else if (examData.endDate && now > examData.endDate) {
+                isRestricted = true;
+                restrictionType = 'past';
+            }
+
+            if (isRestricted) {
+                showRestrictedScreen(restrictionType);
+            } else {
+                initPortal();
+            }
+        }
+
+        function showRestrictedScreen(type) {
+            elements.restrictedScreen.classList.remove('hidden');
+            elements.restrictionMsg.innerText = type === 'future' 
+                ? "This portal will open soon." 
+                : "The access window for this paper has closed.";
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            
+            elements.restrictedDetails.innerHTML = `
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="opacity-50">SESSION</span>
+                        <span class="font-bold">${examData.sessionName}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="opacity-50">START</span>
+                        <span>${examData.startDate ? examData.startDate.toLocaleDateString(undefined, options) : 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="opacity-50">END</span>
+                        <span>${examData.endDate ? examData.endDate.toLocaleDateString(undefined, options) : 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
         function showError(msg) {
-            if (elements.loadingScreen) {
-                elements.loadingScreen.innerHTML = `<p class="text-red-500 font-bold uppercase text-xs tracking-widest">${msg}</p>`;
+            if (elements.loadingStatus) {
+                elements.loadingStatus.innerText = msg;
+                elements.loadingStatus.classList.remove('text-gray-400');
+                elements.loadingStatus.classList.add('text-red-500');
             }
         }
 
         function initPortal() {
-            if (elements.loadingScreen) elements.loadingScreen.classList.add('hidden');
             const urlParams = new URLSearchParams(window.location.search);
             const paperId = urlParams.get('paper') || '2';
             const completeKey = `nexus_exam_complete_${paperId}`;
@@ -372,9 +439,13 @@
         }
 
         function showStartScreen() {
+            if (elements.sessionNameDisplay) elements.sessionNameDisplay.innerText = examData.sessionName;
+            
             if (elements.examDetails) {
+                const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
                 elements.examDetails.innerHTML = `
                     <div class="flex justify-between items-center"><span class="uppercase tracking-widest font-bold text-[10px] opacity-60">Session Limit</span><b class="font-brand text-lg text-emerald-500">${examData.duration} min</b></div>
+                    <div class="flex justify-between items-center text-[10px]"><span class="uppercase tracking-widest font-bold opacity-60">Window</span><span class="font-mono">${examData.startDate ? examData.startDate.toLocaleDateString(undefined, options) : 'Any'} — ${examData.endDate ? examData.endDate.toLocaleDateString(undefined, options) : 'Any'}</span></div>
                 `;
             }
             if (elements.startScreen) elements.startScreen.classList.remove('hidden');
@@ -414,6 +485,7 @@
             if (elements.startScreen) elements.startScreen.classList.add('hidden');
             if (elements.examContent) elements.examContent.classList.add('hidden');
             if (elements.timerContainer) elements.timerContainer.classList.add('hidden');
+            if (elements.restrictedScreen) elements.restrictedScreen.classList.add('hidden');
             if (elements.completionScreen) elements.completionScreen.classList.remove('hidden');
             
             if (elements.uniqueCode) elements.uniqueCode.innerText = localStorage.getItem(`nexus_hash_${paperId}`) || "--";
@@ -429,7 +501,6 @@
             if (elements.unlockContainer) elements.unlockContainer.classList.add('hidden');
             if (elements.postExamActions) elements.postExamActions.classList.remove('hidden');
             
-            // Visual feedback
             const headerIcon = document.getElementById('completion-header-icon');
             if (headerIcon) {
                 headerIcon.classList.remove('bg-emerald-500');
